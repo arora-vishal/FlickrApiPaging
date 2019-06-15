@@ -59,7 +59,10 @@ public class ImagesViewModel extends AndroidViewModel {
     }
 
     public void retryLatestRequest() {
-        if (latestRetryRequest.getRetryCallback() != null) {
+        if (latestRetryRequest == null || latestRetryRequest.getRetryCallback() == null) {
+            String value = this.keyword.getValue();
+            this.keyword.setValue(value);
+        } else {
             latestRetryRequest.getRetryCallback().retry();
         }
     }
