@@ -26,6 +26,7 @@ import com.effort.images.di.component.DaggerMainActivityComponent;
 import com.effort.images.di.component.MainActivityComponent;
 import com.effort.images.di.module.MainActivityModule;
 import com.effort.images.lifecycle.ImagesViewModel;
+import com.effort.images.utils.AppUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -130,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnSearch.setOnClickListener(v -> {
+            AppUtils.hideSoftKeyboard(this);
             requestImages(etSearch.getText().toString());
         });
 
