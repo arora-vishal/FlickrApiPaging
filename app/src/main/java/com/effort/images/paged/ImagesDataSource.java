@@ -20,6 +20,7 @@ import javax.inject.Inject;
 
 import retrofit2.Call;
 import retrofit2.Callback;
+import retrofit2.HttpException;
 import retrofit2.Response;
 
 public class ImagesDataSource extends PageKeyedDataSource<Integer, ImageResource> {
@@ -47,11 +48,13 @@ public class ImagesDataSource extends PageKeyedDataSource<Integer, ImageResource
             @Override
             public void onResponse(Call<ImageSearchResponse> call, Response<ImageSearchResponse> response) {
                 networkResourceState.postValue(NetworkResourceState.loaded());
-                if (response.body() != null) {
+                if (response.body() != null && !response.body().getPhotos().getImages().isEmpty()) {
                     callback.onResult(response.body().getPhotos().getImages(), 0, 1);
                     for (ImageResource imageResource : response.body().getPhotos().getImages()) {
                         imagesCallback.ifPresent(listResultCallback -> listResultCallback.onResult(new ImageSearchEntity(keyword, imageResource)));
                     }
+                } else {
+                    dispatchError(new Exception("No results found"));
                 }
             }
 
@@ -94,8 +97,10 @@ public class ImagesDataSource extends PageKeyedDataSource<Integer, ImageResource
     private void dispatchError(Throwable t) {
         if (t instanceof IOException) {
             networkResourceState.postValue(NetworkResourceState.error("Internet Connectivity error"));
-        } else {
+        } else if (t instanceof HttpException){
             networkResourceState.postValue(NetworkResourceState.error("API error"));
+        } else {
+            networkResourceState.postValue(NetworkResourceState.error(t.getMessage()));
         }
     }
 

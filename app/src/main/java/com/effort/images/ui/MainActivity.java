@@ -67,14 +67,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void subscribeImages() {
-        imagesViewModel.getImages().observe(this,
-                imageResources -> this.imagesAdapter.submitList(imageResources));
-
-        imagesViewModel.getNetworkState().observe(this,
-                networkResourceState -> this.imagesAdapter.setNetworkResourceState(networkResourceState));
-    }
-
     private void initViews() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -125,6 +117,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         this.imagesAdapter.setRetryCallback(() -> imagesViewModel.retryLatestRequest());
+    }
+
+    private void subscribeImages() {
+        imagesViewModel.getImages().observe(this,
+                imageResources -> this.imagesAdapter.submitList(imageResources));
+
+        imagesViewModel.getNetworkState().observe(this,
+                networkResourceState -> this.imagesAdapter.setNetworkResourceState(networkResourceState));
     }
 
     private void requestImages(String keyword) {
