@@ -2,7 +2,9 @@ package com.effort.images.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.app.SharedElementCallback;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -13,15 +15,21 @@ import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.EditText;
 
 import com.effort.images.ImageApplication;
 import com.effort.images.R;
+import com.effort.images.data.ImageResource;
 import com.effort.images.di.component.DaggerMainActivityComponent;
 import com.effort.images.di.component.MainActivityComponent;
 import com.effort.images.di.module.MainActivityModule;
 import com.effort.images.lifecycle.ImagesViewModel;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -29,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
 
     // keys
     private static final String KEY_SEARCH_QUERY = "KEY_SEARCH_QUERY";
+    public static final String KEY_START_ITEM_POSITION = "KEY_START_ITEM_POSITION";
+    public static final String KEY_CURRENT_ITEM_POSITION = "KEY_CURRENT_ITEM_POSITION";
 
     // dependencies
     @Inject
@@ -43,11 +53,38 @@ public class MainActivity extends AppCompatActivity {
 
     private ImagesAdapter imagesAdapter;
     private GridLayoutManager layoutManager;
+    private Bundle reenterState;
+
+    private final SharedElementCallback exitElementCallback = new SharedElementCallback() {
+        @Override
+        public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+            super.onMapSharedElements(names, sharedElements);
+            if (reenterState != null) {
+                final int startingPosition = reenterState.getInt(KEY_START_ITEM_POSITION);
+                final int currentPosition = reenterState.getInt(KEY_CURRENT_ITEM_POSITION);
+
+                if (startingPosition != currentPosition) {
+                    final String newTransitionName = "" + imagesAdapter.getCurrentList().snapshot().get(currentPosition).getId();
+                    final View newSharedElement = rvImages.findViewHolderForAdapterPosition(currentPosition).itemView.findViewById(R.id.iv_image);
+                    if (newSharedElement != null) {
+                        names.clear();
+                        names.add(newTransitionName);
+
+                        sharedElements.clear();
+                        sharedElements.put(newTransitionName, newSharedElement);
+                    }
+                }
+                reenterState = null;
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        ActivityCompat.setExitSharedElementCallback(this, exitElementCallback);
 
         mainActivityComponent = DaggerMainActivityComponent.builder()
                 .mainActivityModule(new MainActivityModule(this))
@@ -109,8 +146,10 @@ public class MainActivity extends AppCompatActivity {
 
         this.imagesAdapter.setItemClickListener((item, position, itemView) -> {
             final View imageView = rvImages.findViewHolderForAdapterPosition(position).itemView.findViewById(R.id.iv_image);
+            ArrayList<ImageResource> imageResources = new ArrayList<>(imagesAdapter.getCurrentList().snapshot());
             Intent intent = new Intent(this, ImageViewerActivity.class);
-            intent.putExtra(ImageViewerActivity.KEY_IMAGE_RESOURCE, item);
+            intent.putExtra(ImageViewerActivity.KEY_IMAGE_RESOURCES, imageResources);
+            intent.putExtra(ImageViewerActivity.KEY_ITEM_INDEX, position);
             ActivityOptionsCompat options = ActivityOptionsCompat.
                     makeSceneTransitionAnimation(this, imageView, ViewCompat.getTransitionName(imageView));
             startActivity(intent, options.toBundle());
@@ -129,6 +168,25 @@ public class MainActivity extends AppCompatActivity {
 
     private void requestImages(String keyword) {
         imagesViewModel.requestImages(keyword);
+    }
+
+    @Override
+    public void onActivityReenter(int resultCode, Intent data) {
+        super.onActivityReenter(resultCode, data);
+        reenterState = data.getExtras();
+        final int startingPosition = data.getIntExtra(KEY_START_ITEM_POSITION, 0);
+        final int currentPosition = data.getIntExtra(KEY_CURRENT_ITEM_POSITION, 0);
+        if (startingPosition != currentPosition) rvImages.scrollToPosition(currentPosition);
+        ActivityCompat.postponeEnterTransition(this);
+
+        rvImages.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                rvImages.getViewTreeObserver().removeOnPreDrawListener(this);
+                ActivityCompat.startPostponedEnterTransition(MainActivity.this);
+                return true;
+            }
+        });
     }
 
     @Override
