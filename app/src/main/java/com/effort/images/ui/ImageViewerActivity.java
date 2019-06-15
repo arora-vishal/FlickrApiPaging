@@ -3,6 +3,7 @@ package com.effort.images.ui;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.ImageView;
 
@@ -26,23 +27,22 @@ public class ImageViewerActivity extends AppCompatActivity {
 
         ImageResource imageResource = (ImageResource) getIntent().getSerializableExtra(KEY_IMAGE_RESOURCE);
         ImageView imageView = findViewById(R.id.iv_full_image);
+        ViewCompat.setTransitionName(imageView, "" + imageResource.getId());
 
         Glide.with(this)
                 .load(imageResource.getHdUrl())
                 .listener(new RequestListener<Drawable>() {
                     @Override
                     public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                        supportStartPostponedEnterTransition();
                         return false;
                     }
 
                     @Override
                     public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
                         supportStartPostponedEnterTransition();
-                        imageView.setImageDrawable(resource);
-                        return true;
+                        return false;
                     }
-                }).submit();
+                }).into(imageView);
 
     }
 

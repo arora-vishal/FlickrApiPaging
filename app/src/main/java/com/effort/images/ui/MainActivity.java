@@ -3,6 +3,7 @@ package com.effort.images.ui;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -115,11 +116,11 @@ public class MainActivity extends AppCompatActivity {
         rvImages.setAdapter(this.imagesAdapter);
 
         this.imagesAdapter.setItemClickListener((item, position, itemView) -> {
-            View imageView = rvImages.findViewHolderForAdapterPosition(position).itemView.findViewById(R.id.iv_image);
+            final View imageView = rvImages.findViewHolderForAdapterPosition(position).itemView.findViewById(R.id.iv_image);
             Intent intent = new Intent(this, ImageViewerActivity.class);
             intent.putExtra(ImageViewerActivity.KEY_IMAGE_RESOURCE, item);
             ActivityOptionsCompat options = ActivityOptionsCompat.
-                    makeSceneTransitionAnimation(this, imageView, "robot");
+                    makeSceneTransitionAnimation(this, imageView, ViewCompat.getTransitionName(imageView));
             startActivity(intent, options.toBundle());
         });
 

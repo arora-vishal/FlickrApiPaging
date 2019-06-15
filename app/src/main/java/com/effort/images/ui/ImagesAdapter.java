@@ -3,6 +3,7 @@ package com.effort.images.ui;
 import android.arch.paging.PagedListAdapter;
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -77,6 +78,23 @@ public class ImagesAdapter extends PagedListAdapter<ImageResource, RecyclerView.
 
     }
 
+    @Override
+    public int getItemViewType(int position) {
+        if (hasExtraRow() && position == getItemCount() - 1) {
+            return VIEW_TYPE_NETWORK_STATE;
+        }
+        return super.getItemViewType(position);
+    }
+
+    @Override
+    public int getItemCount() {
+        return super.getItemCount() + (hasExtraRow() ? 1 : 0);
+    }
+
+    public boolean hasExtraRow() {
+        return networkResourceState.status != LOADED;
+    }
+
     public void setNetworkResourceState(NetworkResourceState networkResourceState) {
         if (this.networkResourceState.status == networkResourceState.status) {
             return;
@@ -95,33 +113,12 @@ public class ImagesAdapter extends PagedListAdapter<ImageResource, RecyclerView.
         }
     }
 
-    public boolean hasExtraRow() {
-        return networkResourceState.status != LOADED;
-    }
-
     public void setRetryCallback(Callback callback) {
         this.retryCallback = Optional.of(callback);
     }
 
     public void setItemClickListener(ItemClickListener<ImageResource> itemClickListener) {
         this.itemClickListener = Optional.of(itemClickListener);
-    }
-
-    @Override
-    public int getItemViewType(int position) {
-        if (hasExtraRow() && position == getItemCount() - 1) {
-            return VIEW_TYPE_NETWORK_STATE;
-        }
-        return super.getItemViewType(position);
-    }
-
-    @Override
-    public int getItemCount() {
-        return super.getItemCount() + (hasExtraRow() ? 1 : 0);
-    }
-
-    interface ItemClickListener<T> {
-        void onItemClick(T item, int position, View itemView);
     }
 
     static class ImageHolder extends RecyclerView.ViewHolder {
@@ -134,15 +131,18 @@ public class ImagesAdapter extends PagedListAdapter<ImageResource, RecyclerView.
         }
 
         public void bind(ImageResource item) {
+            ViewCompat.setTransitionName(ivImage, "" + item.getId());
             Glide.with(ivImage)
                     .load(item.getSdUrl())
                     .into(ivImage);
         }
+
     }
 
     static class NetworkStateViewHolder extends RecyclerView.ViewHolder {
 
         private ProgressBar pbLoader;
+
         private Button btnRetry;
 
         public NetworkStateViewHolder(@NonNull View itemView, Optional<Callback> retryCallback) {
@@ -164,5 +164,10 @@ public class ImagesAdapter extends PagedListAdapter<ImageResource, RecyclerView.
                     btnRetry.setText(networkState.getMessage());
             }
         }
+
+    }
+
+    interface ItemClickListener<T> {
+        void onItemClick(T item, int position, View itemView);
     }
 }
